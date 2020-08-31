@@ -1,0 +1,7 @@
+# Project exclude paths
+/out/
+# Project exclude paths
+/JavaClient/.gradle/
+/JavaClient/build/
+/JavaClient/build/classes/java/main/
+/PiServer/venv/
