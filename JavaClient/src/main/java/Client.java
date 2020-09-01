@@ -19,9 +19,14 @@ import java.text.DateFormat;
 import java.text.FieldPosition;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class Client {
@@ -42,10 +47,19 @@ public class Client {
         AnchorPane.setLeftAnchor(swingNode, 16.0);
         AnchorPane.setRightAnchor(swingNode, 16.0);
 
-        tempData.add(new Minute(1, new Hour()), 5);
-        tempData.add(new Minute(2, new Hour()), 12);
-        humidData.add(new Minute(1, new Hour()), 3);
-        humidData.add(new Minute(2, new Hour()), 9);
+        // Dummy data kan udkommenteres.
+        tempData.add(new Hour(20, new Day(30, 8, 2020)), 12);
+        tempData.add(new Hour(21, new Day(30, 8, 2020)), 11);
+        tempData.add(new Hour(22, new Day(30, 8, 2020)), 9);
+        tempData.add(new Hour(23, new Day(30, 8, 2020)), 8);
+        tempData.add(new Hour(0, new Day(31, 8, 2020)), 6);
+        tempData.add(new Hour(1, new Day(31, 8, 2020)), 5);
+        humidData.add(new Hour(20, new Day(30, 8, 2020)), 33);
+        humidData.add(new Hour(21, new Day(30, 8, 2020)), 30);
+        humidData.add(new Hour(22, new Day(30, 8, 2020)), 29);
+        humidData.add(new Hour(23, new Day(30, 8, 2020)), 27);
+        humidData.add(new Hour(0, new Day(31, 8, 2020)), 24);
+        humidData.add(new Hour(1, new Day(31, 8, 2020)), 21);
 
         tempCollection.addSeries(tempData);
         humidCollection.addSeries(humidData);
@@ -65,13 +79,13 @@ public class Client {
         plot.mapDatasetToRangeAxis(1, 1);
 
         final DateAxis axis = (DateAxis) plot.getDomainAxis();
-        axis.setTickUnit(new DateTickUnit(DateTickUnitType.MINUTE, 1));
-        axis.setUpperMargin(3);
-        axis.setLowerMargin(3);
+        axis.setTickUnit(new DateTickUnit(DateTickUnitType.HOUR, 1));
+        axis.setUpperMargin(1);
+//        axis.setLowerMargin(1);
 
 
         final SimpleDateFormat hourFmt = new SimpleDateFormat("HH:mm");
-        final SimpleDateFormat datFmt = new SimpleDateFormat("d.MMM");
+        final SimpleDateFormat datFmt = new SimpleDateFormat("d. MMMM");
 
         axis.setDateFormatOverride(new DateFormat() {
             @Override
@@ -91,35 +105,39 @@ public class Client {
             }
         });
 
-//        new Thread(() -> {
-//            while (Platform.isAccessibilityActive()) {
-//                try {
-//                    Socket socket = new Socket("localhost", 12346);
-//
-//                    BufferedReader inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-//                    String data = inputStream.readLine();
-//
-//                    double temp = Double.parseDouble(data.substring(0, data.indexOf(' ')));
-//                    double humid = Double.parseDouble(data.substring(data.indexOf(' ') + 1));
-//
-//                    SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm");
-//                    String time = dateFormat.format(new Date());
-//
-//                    System.out.println("Temperaturen er: " + temp + " grader");
-//                    System.out.println("Luftfugtigheden er: " + humid + "%");
-//                    System.out.println(time);
-//
-//                    Platform.runLater(() -> {
-//                        tempData.add(new TimeSeriesDataItem(new Minute(), temp));
-//                        humidData.add(new TimeSeriesDataItem(new Minute(), humid));
-//                    });
-//
-//                } catch (IOException io) {
-//                    io.printStackTrace();
-//                    return;
-//                }
-//            }
-//        }).start();
+        while (true) {
+            LocalTime now = LocalTime.now();
+            long nextHour = now.until(now.plusHours(1).withMinute(0), ChronoUnit.MINUTES);
+
+            ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+            service.schedule(new ReadTask(), nextHour, TimeUnit.MINUTES);
+        }
+    }
+
+    class ReadTask implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+                Socket socket = new Socket("localhost", 12346);
+
+                BufferedReader inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                String data = inputStream.readLine();
+
+                double temp = Double.parseDouble(data.substring(0, data.indexOf(' ')));
+                double humid = Double.parseDouble(data.substring(data.indexOf(' ') + 1));
+
+                Platform.runLater(() -> {
+                    tempData.add(new TimeSeriesDataItem(new Hour(), temp));
+                    humidData.add(new TimeSeriesDataItem(new Hour(), humid));
+                });
+
+                Thread.sleep(60000);
+
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 }

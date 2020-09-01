@@ -26,6 +26,7 @@ import datetime
 
 # import Adafruit_DHT
 
+# Script ændrede så command line argumenter ikke er nødvendige.
 
 # Parse command line parameters.
 # sensor_args = { '11': Adafruit_DHT.DHT11,
@@ -41,8 +42,11 @@ import datetime
 
 # Try to grab a sensor reading.  Use the read_retry method which will retry up
 # to 15 times to get a sensor reading (waiting 2 seconds between each retry).
+
+# Rigtig data.
 # humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
 
+# Dummy data.
 humidity, temperature = 58.0, 28.0
 
 # Un-comment the line below to convert the temperature to Fahrenheit.
@@ -64,7 +68,7 @@ s.listen(5)
 print("socket is listening")
 
 
-def readandsend():
+def read_and_send():
     global humidity
     global temperature
 
@@ -75,6 +79,8 @@ def readandsend():
 
         print(message)
         c.sendall(message.encode('utf-8'))
+
+        # Dummy data inkrementerer.
         humidity += 1.0
         temperature += 1.0
     else:
@@ -85,9 +91,15 @@ def readandsend():
 
 while True:
     x = datetime.datetime.now().minute
-    print(x)
-    if x % 1 == 0:
-        readandsend()
-        time.sleep(60)
+
+    # Send data hvert femte minut.
+    # if x % 5 == 0:
+    #     read_and_send()
+    #     time.sleep(240)
+
+    # Send data hver time.
+    if x == 0:
+        read_and_send()
+        time.sleep(3500)
     else:
-        time.sleep(30)
+        time.sleep(50)
