@@ -23,6 +23,7 @@ import sys
 import socket
 import time
 import datetime
+import sched
 
 # import Adafruit_DHT
 
@@ -87,21 +88,19 @@ def read_and_send():
         print('Failed to get reading. Try again!')
         sys.exit(1)
     c.close()
+    time.sleep(60)
+    schedule()
 
 
-while True:
-    x = datetime.datetime.now().minute
+def schedule():
+    x = datetime.datetime.now()
+    y = datetime.datetime.now().replace(microsecond=0, second=0, minute=0) + datetime.timedelta(hours=1)
 
-    # Send data hvert minut.
-    # if x % 1 == 0:
-    #     read_and_send()
-    #     time.sleep(50)
-    # else:
-    #     time.sleep(50)
+    delta = y - x
+    print(delta)
+    print(delta.seconds)
+    scheduler = sched.scheduler(time.time(), time.sleep)
+    scheduler.enter(delta.seconds, 1, read_and_send())
 
-    # Send data hver time.
-    if x == 0:
-        read_and_send()
-        time.sleep(3500)
-    else:
-        time.sleep(50)
+
+schedule()

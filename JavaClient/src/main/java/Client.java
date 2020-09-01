@@ -83,7 +83,6 @@ public class Client {
         axis.setUpperMargin(1);
         axis.setLowerMargin(1);
 
-
         final SimpleDateFormat hourFmt = new SimpleDateFormat("HH:mm");
         final SimpleDateFormat datFmt = new SimpleDateFormat("d. MMMM");
 
@@ -129,12 +128,9 @@ public class Client {
                 double temp = Double.parseDouble(data.substring(0, data.indexOf(' ')));
                 double humid = Double.parseDouble(data.substring(data.indexOf(' ') + 1));
 
-                System.out.println(temp);
-                System.out.println(humid);
-
                 Platform.runLater(() -> {
-                    tempData.add(new TimeSeriesDataItem(new Minute(), temp));
-                    humidData.add(new TimeSeriesDataItem(new Minute(), humid));
+                    tempData.add(new TimeSeriesDataItem(new Hour(), temp));
+                    humidData.add(new TimeSeriesDataItem(new Hour(), humid));
                 });
 
                 Thread.sleep(60000);
