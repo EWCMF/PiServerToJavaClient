@@ -78,7 +78,6 @@ def read_and_send():
     if humidity is not None and temperature is not None:
         message = ('{0:0.1f} {1:0.1f}'.format(temperature, humidity))
 
-        print(message)
         c.sendall(message.encode('utf-8'))
 
         # Dummy data inkrementerer.
@@ -97,8 +96,6 @@ def schedule():
     y = datetime.datetime.now().replace(microsecond=0, second=0, minute=0) + datetime.timedelta(hours=1)
 
     delta = y - x
-    print(delta)
-    print(delta.seconds)
     scheduler = sched.scheduler(time.time(), time.sleep)
     scheduler.enter(delta.seconds, 1, read_and_send())
 
