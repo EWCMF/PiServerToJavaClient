@@ -92,10 +92,12 @@ def read_and_send():
 while True:
     x = datetime.datetime.now().minute
 
-    # Send data hvert femte minut.
-    # if x % 5 == 0:
+    # Send data hvert minut.
+    # if x % 1 == 0:
     #     read_and_send()
-    #     time.sleep(240)
+    #     time.sleep(50)
+    # else:
+    #     time.sleep(50)
 
     # Send data hver time.
     if x == 0:

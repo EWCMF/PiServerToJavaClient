@@ -48,18 +48,18 @@ public class Client {
         AnchorPane.setRightAnchor(swingNode, 16.0);
 
         // Dummy data kan udkommenteres.
-        tempData.add(new Hour(20, new Day(30, 8, 2020)), 12);
-        tempData.add(new Hour(21, new Day(30, 8, 2020)), 11);
-        tempData.add(new Hour(22, new Day(30, 8, 2020)), 9);
-        tempData.add(new Hour(23, new Day(30, 8, 2020)), 8);
-        tempData.add(new Hour(0, new Day(31, 8, 2020)), 6);
-        tempData.add(new Hour(1, new Day(31, 8, 2020)), 5);
-        humidData.add(new Hour(20, new Day(30, 8, 2020)), 33);
-        humidData.add(new Hour(21, new Day(30, 8, 2020)), 30);
-        humidData.add(new Hour(22, new Day(30, 8, 2020)), 29);
-        humidData.add(new Hour(23, new Day(30, 8, 2020)), 27);
-        humidData.add(new Hour(0, new Day(31, 8, 2020)), 24);
-        humidData.add(new Hour(1, new Day(31, 8, 2020)), 21);
+//        tempData.add(new Hour(20, new Day(30, 8, 2020)), 12);
+//        tempData.add(new Hour(21, new Day(30, 8, 2020)), 11);
+//        tempData.add(new Hour(22, new Day(30, 8, 2020)), 9);
+//        tempData.add(new Hour(23, new Day(30, 8, 2020)), 8);
+//        tempData.add(new Hour(0, new Day(31, 8, 2020)), 6);
+//        tempData.add(new Hour(1, new Day(31, 8, 2020)), 5);
+//        humidData.add(new Hour(20, new Day(30, 8, 2020)), 33);
+//        humidData.add(new Hour(21, new Day(30, 8, 2020)), 30);
+//        humidData.add(new Hour(22, new Day(30, 8, 2020)), 29);
+//        humidData.add(new Hour(23, new Day(30, 8, 2020)), 27);
+//        humidData.add(new Hour(0, new Day(31, 8, 2020)), 24);
+//        humidData.add(new Hour(1, new Day(31, 8, 2020)), 21);
 
         tempCollection.addSeries(tempData);
         humidCollection.addSeries(humidData);
@@ -81,7 +81,7 @@ public class Client {
         final DateAxis axis = (DateAxis) plot.getDomainAxis();
         axis.setTickUnit(new DateTickUnit(DateTickUnitType.HOUR, 1));
         axis.setUpperMargin(1);
-//        axis.setLowerMargin(1);
+        axis.setLowerMargin(1);
 
 
         final SimpleDateFormat hourFmt = new SimpleDateFormat("HH:mm");
@@ -105,13 +105,15 @@ public class Client {
             }
         });
 
-        while (true) {
-            LocalTime now = LocalTime.now();
-            long nextHour = now.until(now.plusHours(1).withMinute(0), ChronoUnit.MINUTES);
+        scheduleTask();
+    }
 
-            ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
-            service.schedule(new ReadTask(), nextHour, TimeUnit.MINUTES);
-        }
+    private void scheduleTask() {
+        LocalTime now = LocalTime.now();
+        long nextHour = now.until(now.plusHours(1).withMinute(0), ChronoUnit.MINUTES);
+
+        ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+        service.schedule(new ReadTask(), nextHour, TimeUnit.MINUTES);
     }
 
     class ReadTask implements Runnable {
@@ -127,12 +129,16 @@ public class Client {
                 double temp = Double.parseDouble(data.substring(0, data.indexOf(' ')));
                 double humid = Double.parseDouble(data.substring(data.indexOf(' ') + 1));
 
+                System.out.println(temp);
+                System.out.println(humid);
+
                 Platform.runLater(() -> {
-                    tempData.add(new TimeSeriesDataItem(new Hour(), temp));
-                    humidData.add(new TimeSeriesDataItem(new Hour(), humid));
+                    tempData.add(new TimeSeriesDataItem(new Minute(), temp));
+                    humidData.add(new TimeSeriesDataItem(new Minute(), humid));
                 });
 
                 Thread.sleep(60000);
+                scheduleTask();
 
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
