@@ -25,9 +25,9 @@ import time
 import datetime
 import sched
 
-# import Adafruit_DHT
+import Adafruit_DHT
 
-# Script ændrede så command line argumenter ikke er nødvendige.
+# Script aendrede saa command line argumenter ikke er noedvendige.
 
 # Parse command line parameters.
 # sensor_args = { '11': Adafruit_DHT.DHT11,
@@ -43,12 +43,14 @@ import sched
 
 # Try to grab a sensor reading.  Use the read_retry method which will retry up
 # to 15 times to get a sensor reading (waiting 2 seconds between each retry).
+sensor = Adafruit_DHT.DHT11
+pin = '22'
 
 # Rigtig data.
 # humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
 
 # Dummy data.
-humidity, temperature = 58.0, 28.0
+# humidity, temperature = 58.0, 28.0
 
 # Un-comment the line below to convert the temperature to Fahrenheit.
 # temperature = temperature * 9/5.0 + 32
@@ -57,6 +59,7 @@ humidity, temperature = 58.0, 28.0
 # the results will be null (because Linux can't
 # guarantee the timing of calls to read the sensor).
 # If this happens try again!
+
 s = socket.socket()
 print("Socket successfully created")
 
@@ -70,8 +73,9 @@ print("socket is listening")
 
 
 def read_and_send():
-    global humidity
-    global temperature
+    #global humidity
+    #global temperature
+    humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
 
     c, addr = s.accept()
     print("got connection from"), addr
@@ -81,19 +85,21 @@ def read_and_send():
         c.sendall(message.encode('utf-8'))
 
         # Dummy data inkrementerer.
-        humidity += 1.0
-        temperature += 1.0
+        # humidity += 1.0
+        # temperature += 1.0
     else:
         print('Failed to get reading. Try again!')
         sys.exit(1)
     c.close()
-    time.sleep(60)
+    # time.sleep(60)
+    time.sleep(10)
     schedule()
 
 
 def schedule():
     x = datetime.datetime.now()
-    y = datetime.datetime.now().replace(microsecond=0, second=0, minute=0) + datetime.timedelta(hours=1)
+    # y = datetime.datetime.now().replace(microsecond=0, second=0, minute = 0) + datetime.timedelta(hours=1)
+    y = datetime.datetime.now().replace(microsecond=0, second=0) + datetime.timedelta(minutes=1)
 
     delta = y - x
     scheduler = sched.scheduler(time.time(), time.sleep)

@@ -79,7 +79,8 @@ public class Client {
         plot.mapDatasetToRangeAxis(1, 1);
 
         final DateAxis axis = (DateAxis) plot.getDomainAxis();
-        axis.setTickUnit(new DateTickUnit(DateTickUnitType.HOUR, 1));
+        //axis.setTickUnit(new DateTickUnit(DateTickUnitType.HOUR, 1));
+        axis.setTickUnit(new DateTickUnit(DateTickUnitType.MINUTE, 1));
         axis.setUpperMargin(1);
         axis.setLowerMargin(1);
 
@@ -109,10 +110,12 @@ public class Client {
 
     private void scheduleTask() {
         LocalTime now = LocalTime.now();
-        long nextHour = now.until(now.plusHours(1).withMinute(0), ChronoUnit.MINUTES);
+        //long nextHour = now.until(now.plusHours(1).withMinute(0), ChronoUnit.MINUTES);
+        long nextMinute = now.until(now.plusMinutes(1).withSecond(0), ChronoUnit.SECONDS);
 
         ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
-        service.schedule(new ReadTask(), nextHour, TimeUnit.MINUTES);
+        //service.schedule(new ReadTask(), nextHour, TimeUnit.MINUTES);
+        service.schedule(new ReadTask(), nextMinute, TimeUnit.SECONDS);
     }
 
     class ReadTask implements Runnable {
@@ -120,7 +123,7 @@ public class Client {
         @Override
         public void run() {
             try {
-                Socket socket = new Socket("localhost", 12346);
+                Socket socket = new Socket("192.168.1.150", 12346);
 
                 BufferedReader inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String data = inputStream.readLine();
@@ -129,11 +132,14 @@ public class Client {
                 double humid = Double.parseDouble(data.substring(data.indexOf(' ') + 1));
 
                 Platform.runLater(() -> {
-                    tempData.add(new TimeSeriesDataItem(new Hour(), temp));
-                    humidData.add(new TimeSeriesDataItem(new Hour(), humid));
+                    //tempData.add(new TimeSeriesDataItem(new Hour(), temp));
+                    //humidData.add(new TimeSeriesDataItem(new Hour(), humid));
+                    tempData.add(new TimeSeriesDataItem(new Minute(), temp));
+                    humidData.add(new TimeSeriesDataItem(new Minute(), humid));
                 });
 
-                Thread.sleep(60000);
+                //Thread.sleep(60000);
+                Thread.sleep(10000);
                 scheduleTask();
 
             } catch (IOException | InterruptedException e) {
