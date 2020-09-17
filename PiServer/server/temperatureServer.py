@@ -24,33 +24,24 @@ import socket
 import time
 import datetime
 import sched
+import os
+import base64
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-import Adafruit_DHT
 
-# Script aendrede saa command line argumenter ikke er noedvendige.
+# import Adafruit_DHT
 
-# Parse command line parameters.
-# sensor_args = { '11': Adafruit_DHT.DHT11,
-#                 '22': Adafruit_DHT.DHT22,
-#                 '2302': Adafruit_DHT.AM2302 }
-# if len(sys.argv) == 3 and sys.argv[1] in sensor_args:
-#     sensor = Adafruit_DHT.DHT11
-#     pin = '22'
-# else:
-#     print('Usage: sudo ./Adafruit_DHT.py [11|22|2302] <GPIO pin number>')
-#     print('Example: sudo ./Adafruit_DHT.py 2302 4 - Read from an AM2302 connected to GPIO pin #4')
-#     sys.exit(1)
 
 # Try to grab a sensor reading.  Use the read_retry method which will retry up
 # to 15 times to get a sensor reading (waiting 2 seconds between each retry).
-sensor = Adafruit_DHT.DHT11
-pin = '22'
+# sensor = Adafruit_DHT.DHT11
+# pin = '22'
 
 # Rigtig data.
 # humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
 
 # Dummy data.
-# humidity, temperature = 58.0, 28.0
+humidity, temperature = 58.0, 28.0
 
 # Un-comment the line below to convert the temperature to Fahrenheit.
 # temperature = temperature * 9/5.0 + 32
@@ -72,27 +63,50 @@ s.listen(5)
 print("socket is listening")
 
 
+def encrypt(key, string):
+    string_as_bytes = string.encode('utf-8')
+
+    block_size = 16
+
+    if len(string_as_bytes) % block_size != 0:
+        padding = block_size - len(string_as_bytes) % block_size
+        string_as_bytes = string_as_bytes + (bytes([padding]) * padding)
+
+    iv = os.urandom(block_size)
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+    encryptor = cipher.encryptor()
+    ct = encryptor.update(string_as_bytes) + encryptor.finalize()
+    return base64.b64encode(iv+ct).decode('utf-8')
+
+
 def read_and_send():
-    #global humidity
-    #global temperature
-    humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
+    global humidity
+    global temperature
+    # humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
 
     c, addr = s.accept()
     print("got connection from"), addr
     if humidity is not None and temperature is not None:
         message = ('{0:0.1f} {1:0.1f}'.format(temperature, humidity))
 
-        c.sendall(message.encode('utf-8'))
+        key = b"franskhotdog1234"
+
+        ct = encrypt(key, message)
+
+        print("Encrypted text sent:")
+        print(ct)
+
+        c.sendall(ct.encode('utf-8'))
 
         # Dummy data inkrementerer.
-        # humidity += 1.0
-        # temperature += 1.0
+        humidity += 1.0
+        temperature += 1.0
     else:
         print('Failed to get reading. Try again!')
         sys.exit(1)
     c.close()
     # time.sleep(60)
-    time.sleep(10)
+    time.sleep(1)
     schedule()
 
 
@@ -106,4 +120,4 @@ def schedule():
     scheduler.enter(delta.seconds, 1, read_and_send())
 
 
-schedule()
+read_and_send()

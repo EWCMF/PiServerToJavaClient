@@ -11,19 +11,20 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.time.*;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.DataInputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.FieldPosition;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -105,7 +106,7 @@ public class Client {
             }
         });
 
-        scheduleTask();
+        new Thread(new ReadTask()).start();
     }
 
     private void scheduleTask() {
@@ -123,10 +124,26 @@ public class Client {
         @Override
         public void run() {
             try {
-                Socket socket = new Socket("192.168.1.150", 12346);
+                Socket socket = new Socket("localhost", 12346);
 
-                BufferedReader inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                String data = inputStream.readLine();
+                DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+                byte[] bytes = inputStream.readAllBytes();
+                String ct = new String(bytes, StandardCharsets.UTF_8);
+
+                System.out.println("Encrypted text received:");
+                System.out.println(ct);
+
+                String code = "franskhotdog1234";
+                SecretKey key = new SecretKeySpec(code.getBytes(), "AES");
+
+                byte[] cipherBytes = Base64.getDecoder().decode(ct);
+
+                byte[] iv = Arrays.copyOf(cipherBytes, 16);
+                byte[] textBytes = Arrays.copyOfRange(cipherBytes, 16, cipherBytes.length);
+
+                String data = decrypt(textBytes, key, iv);
+                System.out.println("Decrypted text:");
+                System.out.println(data);
 
                 double temp = Double.parseDouble(data.substring(0, data.indexOf(' ')));
                 double humid = Double.parseDouble(data.substring(data.indexOf(' ') + 1));
@@ -139,13 +156,32 @@ public class Client {
                 });
 
                 //Thread.sleep(60000);
-                Thread.sleep(10000);
+                Thread.sleep(1000);
                 scheduleTask();
 
-            } catch (IOException | InterruptedException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
+    public static String decrypt (byte[] cipherText, SecretKey key, byte[] IV) throws Exception
+    {
+        //Get Cipher Instance
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+
+        //Create SecretKeySpec
+        SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
+
+        //Create IvParameterSpec
+        IvParameterSpec ivSpec = new IvParameterSpec(IV);
+
+        //Initialize Cipher for DECRYPT_MODE
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+
+        //Perform Decryption
+        byte[] decryptedText = cipher.doFinal(cipherText);
+
+        return new String(decryptedText);
+    }
 }
